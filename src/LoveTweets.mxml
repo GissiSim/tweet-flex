@@ -1,0 +1,102 @@
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="100%" height="100%" creationComplete="rssParse.send();">
+ 
+<!-- First, we need so set up our HTTPService constructor -->
+<!-- The service will call someurl.rss and when the data comes back
+     it will call the r_Handler function below to handle the data -->
+<mx:HTTPService id="rssParse"
+    url="http://search.twitter.com/search.rss?q=Love"
+    result="r_Handler(event)">
+</mx:HTTPService>
+ 
+<!-- Now lets set up the controllers for this application -->
+<mx:Script>
+    <![CDATA[
+      import mx.formatters.DateFormatter;
+      import mx.controls.dataGridClasses.DataGridColumn;
+        import mx.rpc.events.FaultEvent;
+        import mx.collections.ArrayCollection;
+        import mx.rpc.events.ResultEvent;
+        import mx.controls.Alert;
+       import mx.collections.XMLListCollection;
+		
+		[Bindable] 
+		public var roomList:XMLListCollection;
+        // We want to create an Array Collection to hold the data from the
+        // RSS feed. We want to make the collection Bindable to a Datagrid
+        // Component so when the data changes, the datagrid will be changed
+        [Bindable]
+        private var f_Array:ArrayCollection;
+       
+        // Next, the r_Handler function to handle the incoming data.
+        // The result event from the HTTPService (Data Stream) is passed
+        // into this function
+        private function r_Handler(event:ResultEvent):void
+        {
+            // Now we are going to transfer the data we want into the collection
+            // In this case, we only want the <item> tag that is a child of the <RDF> tag.
+            // The <item> tag holds all of our information. There may be hundreds of items.
+            // The items will be stored in the array collection as Objects for easy access
+            f_Array = event.result.rss.channel.item as ArrayCollection;
+            var title:String = event.result.rss.channel.description;   
+        }
+       
+         private function getFormattedDate( item:Object, column:DataGridColumn ):String
+         {
+            var dateFormatter:DateFormatter = new DateFormatter();
+            dateFormatter.formatString = "MMMM D, YYYY, J:NN:SS";
+            return dateFormatter.format( item.pubDate );
+         }
+ 
+         private function getTwitterName( item:Object, column:DataGridColumn ):String
+         {
+                  var twitName:String = item.author;
+                  var pattern:RegExp = /\w*@\w*\.[org|com]+/g;
+                  var results:Array = twitName.match(pattern);
+                  twitName = results.valueOf();
+                  results = twitName.split("@");
+                  return results[0];
+           
+         }
+       
+        // Now we need to create a Fault handler to catch errors
+        private function f_Handler(event:FaultEvent):void
+        {
+            // We will create a popup Alert box that will give the error info
+            Alert.show(event.message.toString(),"Error");   
+        }
+       
+    ]]>
+</mx:Script>
+ 
+ 
+ 	  <mx:VBox width="100%" height="100%" paddingBottom="20" paddingLeft="20" paddingRight="20" paddingTop="20">
+	      <mx:Label text="Love Tweets" fontSize="20" fontWeight="bold" />
+	      <mx:DataGrid dataProvider="{f_Array}" 
+	      	width="900" height="900" rowCount="15" 
+	      	alternatingItemColors="[#CCCCCC, #AAAAAA]"
+	      	dropShadowEnabled="true" dropShadowColor="#B3B3B3"  
+			shadowDirection="right" shadowDistance="10">
+	         <mx:columns>
+	         	<mx:DataGridColumn headerText="Image">
+	         		<mx:itemRenderer>
+	         			<mx:Component>
+	         				<mx:VBox horizontalAlign="center">
+	         					<mx:Image height="48" source="http://s3.amazonaws.com/twitter_production/profile_images/73884317/BAPTISM2_normal.JPG" />
+	         					
+	         					
+	         				</mx:VBox>
+	         			</mx:Component>
+	         		</mx:itemRenderer>
+	         	</mx:DataGridColumn>
+	            <mx:DataGridColumn width="200" headerText="Created" labelFunction="getFormattedDate" />
+	            <mx:DataGridColumn width="200" headerText="Screen Name" labelFunction="getTwitterName" />
+	            <mx:DataGridColumn headerText="Tweet" dataField="title" />
+	         </mx:columns>
+	      </mx:DataGrid>
+	      <mx:Button label="Refresh" width="100" height="30" click="currentState='expand'"/>
+      </mx:VBox>
+
+
+ 
+   
+</mx:Application>
